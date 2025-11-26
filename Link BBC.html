@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Link BBC</title> 
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- Theme Variables --- */
+        :root {
+            --bg-color: #f8f9fa;
+            --text-color: #333;
+            --card-bg: #ffffff;
+            --accent-color: #007bff; /* অ্যাকসেন্ট নীল */
+            --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.15);
+        }
+
+        body { 
+            background-color: var(--bg-color); 
+            color: var(--text-color); 
+            font-family: 'Poppins', sans-serif; 
+            overflow-x: hidden; 
+        }
+
+        /* Navbar */
+        .glass-nav { 
+            background: rgba(255, 255, 255, 0.95); 
+            backdrop-filter: blur(10px); 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            padding: 15px 0;
+        }
+        .navbar-brand .text-red-600 {
+            color: var(--accent-color);
+        }
+
+        /* Search Input Style */
+        .search-container input {
+            background: #f1f1f1;
+            border: none;
+            border-radius: 25px;
+            padding: 8px 20px;
+            color: #333;
+            width: 250px;
+            transition: all 0.3s;
+        }
+        .search-container input:focus {
+            background: #fff;
+            box-shadow: 0 0 0 2px var(--accent-color);
+            outline: none;
+        }
+
+        /* Movie Card Container */
+        .movie-card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            border: 1px solid #eee;
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* Hover Effect: Scale Up */
+        .movie-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            z-index: 20;
+            box-shadow: var(--shadow-hover);
+            border-color: #ddd;
+        }
+
+        /* --- থাম্বনেইল কাট হওয়া বন্ধ করা --- */
+        .media-wrapper {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 4/3; 
+            background: #e0e0e0;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .poster-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; 
+            background-color: #000;
+            transition: opacity 0.3s ease;
+            position: absolute;
+            top: 0; left: 0; z-index: 10;
+        }
+
+        .preview-video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; 
+            background-color: #000;
+            position: absolute;
+            top: 0; left: 0;
+            opacity: 0;
+            z-index: 5;
+            transition: opacity 0.4s ease;
+        }
+
+        /* HOVER STATES */
+        .movie-card:hover .poster-img { opacity: 0; }
+        .movie-card:hover .preview-video { opacity: 1; z-index: 20; }
+        
+        /* Info Section */
+        .card-info { 
+            padding: 15px; 
+            background: var(--card-bg); 
+        }
+        
+        /* --- ফুল স্ক্রিন মোডাল ডিজাইন (মোবাইল ফোকাস) --- */
+        #videoModal .modal-dialog {
+            max-width: 100vw; 
+            width: 100vw;
+            margin: 0; 
+        }
+        #videoModal .modal-content { 
+            background: #0a0a0a;
+            border-radius: 0; 
+            overflow: hidden;
+            height: 100vh; 
+            box-shadow: none;
+            border: none;
+        }
+        #videoModal .modal-content > button {
+            top: 20px;
+            right: 20px;
+            width: 40px; 
+            height: 40px;
+            background: rgba(0, 0, 0, 0.5); 
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        #videoModal .modal-body {
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        
+        /* --- মোবাইল স্ক্রল এর জন্য ভিডিও কন্টেইনার অ্যাডজাস্টমেন্ট --- */
+        .video-container {
+            position: relative;
+            width: 100%;
+            background: black;
+            flex-shrink: 0;
+            
+            /* মোবাইল/ছোট স্ক্রিনের জন্য ভিডিওর উচ্চতা */
+            height: 35vh; 
+            aspect-ratio: auto; 
+        }
+        
+        /* ✨ ফিক্স: এই লাইনটি পরিবর্তন করা হয়েছে যাতে ভিডিও না কাটে */
+        .video-container video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* <--- ফাইনাল ফিক্স: কোনো অংশ কাটবে না */
+            background-color: black; /* চারপাশে কালো ব্যাকগ্রাউন্ড দেখাবে */
+        }
+        
+        /* বড় স্ক্রিনের জন্য (ট্যাবলেট/ডেস্কটপ) 16:9 রেশিও ব্যবহার করা */
+        @media (min-width: 768px) {
+             .video-container {
+                height: auto;
+                aspect-ratio: 16/9; /* 16:9 Aspect Ratio for larger screens */
+            }
+        }
+
+        /* Modal Info & Related Content Area - Enhanced */
+        .modal-info-section {
+            padding: 25px 30px;
+            background: #1c1c1c; 
+            color: white;
+            flex-grow: 1; 
+            overflow-y: auto; /* এই অংশটি স্ক্রল হবে */
+            border-top: 5px solid var(--accent-color);
+        }
+        .modal-metadata {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .modal-meta-item {
+            font-size: 0.9rem;
+            color: #ccc;
+            font-weight: 500;
+        }
+        .modal-meta-item i {
+            color: var(--accent-color);
+            margin-right: 5px;
+        }
+        
+        /* Related Video Grid Style */
+        .related-video-card {
+            background: #2a2a2a;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .related-video-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            outline: 2px solid var(--accent-color);
+        }
+
+        /* Loader */
+        .loader {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            border: 3px solid #ddd; border-top: 3px solid var(--accent-color);
+            border-radius: 50%; width: 30px; height: 30px;
+            animation: spin 1s linear infinite;
+            z-index: 1;
+        }
+        @keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+
+        /* Toast Notification for Share */
+        #toast-container {
+            position: fixed; bottom: 20px; right: 20px; z-index: 1055;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg fixed-top glass-nav">
+        <div class="container d-flex justify-content-between align-items-center">
+            <a class="navbar-brand font-bold text-3xl tracking-tighter text-dark" href="#">
+                Link <span class="text-red-600">BBC</span>
+            </a>
+            <div class="d-none d-md-block search-container">
+                <input type="text" id="searchInput" placeholder="Search movies...">
+            </div>
+            <button class="navbar-toggler border-0" type="button">
+                <i class="fas fa-bars text-dark"></i>
+            </button>
+        </div>
+    </nav>
+
+    <section class="container py-5 mt-5">
+        <div class="d-flex align-items-center mb-4 mt-3">
+            <div class="h-8 w-1 rounded-full mr-3" style="background-color: var(--accent-color);"></div>
+            <h2 class="text-3xl font-bold text-gray-800 m-0">Trending Now</h2>
+        </div>
+        <div class="mb-4 d-md-none search-container w-100">
+            <input type="text" id="searchInputMobile" class="w-100" placeholder="Search movies...">
+        </div>
+        <div id="movie-grid" class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 g-4">
+            <div id="loading-indicator" class="text-center w-full mt-5">
+                <div class="spinner-border" style="color: var(--accent-color);" role="status"></div>
+                <p class="mt-2 text-gray-500 font-medium">Loading premium content...</p>
+            </div>
+        </div>
+    </section>
+
+    <div class="modal fade" id="videoModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content relative">
+                
+                <button class="absolute z-50 hover:bg-red-600 text-white hover:text-white backdrop-blur-sm rounded-full w-10 h-10 flex items-center justify-center transition-all duration-300 border border-gray-500/50" onclick="closeMainPlayer()">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+                
+                <div class="modal-body">
+                    <div class="video-container">
+                        <video id="mainPlayer" controls autoplay>
+                            <source src="" type="video/mp4">
+                        </video>
+                    </div>
+
+                    <div class="modal-info-section">
+                        
+                        <h3 id="videoTitle" class="text-3xl font-extrabold text-white mb-3 leading-tight">Video Title</h3>
+                        
+                        <div class="modal-metadata">
+                            <span class="modal-meta-item"><i class="fas fa-calendar-alt"></i> <span id="modalYear">2023</span></span>
+                            <span class="modal-meta-item"><i class="fas fa-star"></i> <span id="modalRating">98% Match</span></span>
+                            <span class="modal-meta-item"><i class="fas fa-clock"></i> <span id="modalDuration">1h 45m</span></span>
+                        </div>
+                        
+                        <p id="videoDescription" class="text-gray-300 mb-5 text-base">
+                            High-quality documentary covering world events and politics. A must-watch for all.
+                        </p>
+                        
+                        <div class="flex gap-4 items-center mb-5">
+                            <button class="px-5 py-2 bg-white text-black font-semibold rounded-full hover:bg-gray-200 transition-colors flex items-center gap-2">
+                                <i class="fas fa-play text-lg"></i> Watch Now
+                            </button>
+                            
+                            <button id="modalShareBtn" class="action-btn share-btn bg-blue-600 border-blue-600 hover:bg-blue-700 text-white w-auto px-4" title="Share This Video" style="width: auto; border-radius: 9999px;">
+                                <i class="fas fa-share-alt mr-1 text-sm"></i> Share
+                            </button>
+                            
+                            <button class="action-btn bg-gray-600 border-gray-600 hover:bg-gray-700 text-white ml-auto" title="Add to My List">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        
+                        <h4 class="text-xl font-semibold mt-5 mb-3 border-b border-gray-700 pb-2 text-white">More Like This</h4>
+                        <div id="relatedVideosGrid" class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3">
+                            </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+
+    <script>
+        // --- Firebase Configuration ---
+        const firebaseConfig = {
+            // [নিরাপত্তা সতর্কতা]: এই API Key ফ্রন্টএন্ডে পাবলিক করা নিরাপদ,
+            // যদি তোর Firebase Security Rules (firestore/storage-এর জন্য) কঠোরভাবে সেট করা থাকে।
+            // অবশ্যই নিশ্চিত করবি যে কোনো অ্যাটাকার যেন এই কী ব্যবহার করে ডেটা রাইট/ডিলিট না করতে পারে।
+            apiKey: "AIzaSyD4nW1qbPLy-BFPAXwAGViWN4G4klBNwY0",
+            authDomain: "link-bbc.firebaseapp.com",
+            projectId: "link-bbc",
+            storageBucket: "link-bbc.firebasestorage.app",
+            messagingSenderId: "720784399880",
+            appId: "1:720784399880:web:a9c03aa39ae79406c0bbbd",
+            measurementId: "G-BFRMPX5QE2"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore(); 
+        
+        let allMovies = [];
+        const grid = document.getElementById('movie-grid');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const videoModal = new bootstrap.Modal(document.getElementById('videoModal'));
+        const mainPlayer = document.getElementById('mainPlayer');
+        const videoTitle = document.getElementById('videoTitle');
+        const modalShareBtn = document.getElementById('modalShareBtn');
+        const relatedVideosGrid = document.getElementById('relatedVideosGrid');
+
+        const modalYear = document.getElementById('modalYear');
+        const modalRating = document.getElementById('modalRating');
+        const modalDuration = document.getElementById('modalDuration');
+        const videoDescription = document.getElementById('videoDescription');
+
+        // --- নতুন XSS স্যানিটাইজেশন ফাংশন ---
+        function escapeHTML(str) {
+            if (typeof str !== 'string') return str;
+            // এটি HTML অ্যাট্রিবিউট এবং টেক্সটের জন্য ক্ষতিকারক অক্ষরগুলিকে নিরাপদ করে
+            return str.replace(/[&<>"'/]/g, function (match) {
+                return ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;',
+                    '/': '&#x2F;'
+                })[match];
+            });
+        }
+
+        // --- Load Data ---
+        async function loadMoviesFromFirestore() {
+            loadingIndicator.style.display = 'block';
+            try {
+                const moviesRef = db.collection("movies").orderBy("timestamp", "desc");
+                const snapshot = await moviesRef.get();
+                
+                // Firestore ডেটার সাথে ডামি মেটা-ডেটা যোগ করা (যদি তোর আসল ডেটাবেসে না থাকে)
+                allMovies = snapshot.docs.map(doc => ({ 
+                    id: doc.id, 
+                    ...doc.data(),
+                    duration: doc.data().duration || '1h 30m', 
+                    description: doc.data().description || 'Watch high-quality content on Link BBC. Full video experience!',
+                    year: doc.data().year || '2023',
+                    rating: doc.data().rating || '98'
+                }));
+                loadMovies(allMovies);
+            } catch (error) {
+                console.error("Error:", error);
+                grid.innerHTML = '<p class="text-red-500 text-center w-full mt-5">Failed to load content.</p>';
+            } finally {
+                loadingIndicator.style.display = 'none';
+            }
+        }
+
+        // --- Generate Card HTML (XSS Fixes Applied) ---
+        function loadMovies(list) {
+            grid.innerHTML = '';
+            if(list.length === 0) {
+                grid.innerHTML = '<p class="text-gray-500 text-center w-full mt-5">No movies found.</p>';
+                return;
+            }
+
+            list.forEach((m) => {
+                const col = document.createElement('div');
+                col.className = 'col';
+                
+                // ডেটাবেসের ডাইনামিক ডেটা ইনজেকশনের আগে escapeHTML ব্যবহার করা হয়েছে
+                const safeTitle = escapeHTML(m.title);
+                const safePoster = escapeHTML(m.poster);
+                const safeVideo = escapeHTML(m.video);
+                const safeId = escapeHTML(m.id);
+                
+                col.innerHTML = `
+                    <div class="movie-card group" 
+                         onmouseenter="startPreview(this)" 
+                         onmouseleave="stopPreview(this)" 
+                         onclick="openMainPlayer('${safeVideo}', '${safeTitle}', '${safeId}')">
+                        
+                        <div class="media-wrapper">
+                            <div class="loader"></div>
+                            <img src="${safePoster}" class="poster-img" alt="${safeTitle}">
+                            <video class="preview-video" muted loop preload="none">
+                                <source src="${safeVideo}" type="video/mp4">
+                            </video>
+                            <div class="absolute bottom-2 right-2 bg-black/70 backdrop-blur-sm text-white text-xs px-2 py-1 rounded z-30 font-medium">
+                                <i class="fas fa-play-circle mr-1"></i> Preview
+                            </div>
+                        </div>
+
+                        <div class="card-info">
+                            <h5 class="movie-title truncate">${safeTitle}</h5>
+                            
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="meta-text text-gray-500">${m.year || '2023'} • Action</span>
+                                <span class="text-green-600 text-xs font-bold border border-green-200 bg-green-50 px-2 py-0.5 rounded-full">
+                                    ${m.rating || '98'}% Match
+                                </span>
+                            </div>
+
+                            <div class="flex gap-2 items-center">
+                                <button class="action-btn" title="Play Now">
+                                    <i class="fas fa-play text-xs"></i>
+                                </button>
+                                <button class="action-btn" title="Add to List">
+                                    <i class="fas fa-plus text-xs"></i>
+                                </button>
+                                
+                                <button class="action-btn share-btn ms-auto text-blue-500 border-blue-200" 
+                                        onclick="handleShare(event, '${safeTitle}', '${safeId}')"
+                                        title="Share Movie">
+                                    <i class="fas fa-share-alt text-sm"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(col);
+            });
+        }
+
+        loadMoviesFromFirestore();
+
+        // --- Modal Player Logic ---
+        function openMainPlayer(url, title, id) {
+            
+            const movieData = allMovies.find(m => m.id === id) || {};
+            
+            mainPlayer.src = url;
+            videoTitle.textContent = title; // textContent ব্যবহার করা হয়েছে, যা HTML হিসেবে রেন্ডার করে না
+            
+            // মোডালের মেটা-ডেটা আপডেট করা
+            modalYear.textContent = movieData.year || '2023';
+            modalRating.textContent = `${movieData.rating || '98'}% Match`;
+            modalDuration.textContent = movieData.duration || '1h 30m'; 
+            videoDescription.textContent = movieData.description || 'Watch high-quality content on Link BBC. Full video experience!';
+            
+            modalShareBtn.onclick = (e) => handleShare(e, title, id); 
+
+            loadRelatedVideos(id);
+            
+            videoModal.show(); // একই পেজে মোডাল ওপেন হবে
+        }
+
+        function closeMainPlayer() {
+            mainPlayer.pause();
+            mainPlayer.currentTime = 0;
+            mainPlayer.src = "";
+            videoModal.hide();
+        }
+        document.getElementById('videoModal').addEventListener('hidden.bs.modal', closeMainPlayer);
+        
+        // --- রিলেটেড ভিডিও ফাংশন (XSS Fixes Applied) ---
+        function loadRelatedVideos(currentId) {
+            const related = allMovies.filter(m => m.id !== currentId).slice(0, 4); 
+            
+            relatedVideosGrid.innerHTML = '';
+
+            if (related.length === 0) {
+                relatedVideosGrid.innerHTML = '<p class="text-gray-400 col-span-full">এই মুহূর্তে কোনো রিলেটেড ভিডিও নেই।</p>';
+                return;
+            }
+
+            related.forEach((m) => {
+                // ডেটাবেসের ডাইনামিক ডেটা ইনজেকশনের আগে escapeHTML ব্যবহার করা হয়েছে
+                const safeTitle = escapeHTML(m.title);
+                const safePoster = escapeHTML(m.poster);
+                const safeVideo = escapeHTML(m.video);
+                const safeId = escapeHTML(m.id);
+
+                const cardHtml = `
+                    <div class="col" onclick="openMainPlayer('${safeVideo}', '${safeTitle}', '${safeId}')">
+                        <div class="related-video-card cursor-pointer">
+                            <div class="media-wrapper aspect-video" style="aspect-ratio: 16/9;">
+                                <img src="${safePoster}" class="w-full h-full object-cover" alt="${safeTitle}">
+                            </div>
+                            <div class="p-2">
+                                <h6 class="text-sm font-medium text-white truncate mb-0">${safeTitle}</h6>
+                                <span class="text-xs text-gray-400">${m.year || '2023'}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                relatedVideosGrid.insertAdjacentHTML('beforeend', cardHtml);
+            });
+        }
+
+
+        // --- কার্যকর শেয়ার ফাংশনালিটি (Deprecated Fallback Removed) ---
+        async function handleShare(event, title, movieId) {
+            event.stopPropagation(); 
+            
+            const shareableLink = `${window.location.origin}/movie/${movieId}`; 
+            
+            const shareData = {
+                title: 'Link BBC - Watch Now!',
+                text: `🔥 এখনই দেখ "${title}" Link BBC তে!`,
+                url: shareableLink 
+            };
+            
+            const textToCopy = `[Link BBC] ${shareData.text} \nLink: ${shareableLink}`;
+            let sharedSuccessfully = false;
+
+            // ১. Native Share API (মোবাইলের জন্য সেরা)
+            if (navigator.share) {
+                try {
+                    await navigator.share(shareData);
+                    showToast('সফলভাবে শেয়ার করা হয়েছে!', 'success');
+                    sharedSuccessfully = true;
+                } catch (err) {
+                    console.log('Native Share failed or was canceled:', err);
+                }
+            } 
+
+            // ২. Clipboard API (ডেস্কটপ এবং আধুনিক ব্রাউজারের জন্য)
+            if (!sharedSuccessfully && navigator.clipboard) {
+                try {
+                    await navigator.clipboard.writeText(textToCopy);
+                    showToast('লিংক কপি করা হয়েছে! 🔗', 'success');
+                    sharedSuccessfully = true;
+                } catch (err) {
+                    console.log('Clipboard API failed:', err);
+                    showToast('লিংক কপি করতে ব্যর্থ। ❌', 'error');
+                }
+            }
+
+            // [দ্রষ্টব্য: document.execCommand('copy') deprecated হওয়ায় তা বাদ দেওয়া হয়েছে]
+
+            if (!sharedSuccessfully) {
+                 showToast('শেয়ার বা কপি অপশন কাজ করছে না। ❌', 'error');
+            }
+        }
+
+        // --- Toast Helper ---
+        function showToast(message, type) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bgClass = type === 'success' ? 'bg-blue-600' : 'bg-red-600'; 
+            
+            toast.className = `${bgClass} text-white px-4 py-3 rounded shadow-lg mb-3 flex items-center gap-2 transition-all duration-300 transform translate-y-0 opacity-100`;
+            toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i> <span>${message}</span>`;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-5');
+                setTimeout(() => toast.remove(), 500); 
+            }, 3000);
+        }
+
+        // --- Preview Logic ---
+        let hoverTimeout;
+        function startPreview(card) {
+            const video = card.querySelector('.preview-video');
+            hoverTimeout = setTimeout(() => {
+                // ব্রাউজারের Autoplay পলিসির কারণে এটি কাজ নাও করতে পারে
+                video.play().catch(() => {});
+            }, 300); 
+        }
+
+        function stopPreview(card) {
+            clearTimeout(hoverTimeout);
+            const video = card.querySelector('.preview-video');
+            video.pause();
+            video.currentTime = 0;
+        }
+
+
+        // --- Search Functionality ---
+        const handleSearch = (e) => {
+            const val = e.target.value.toLowerCase();
+            const filtered = allMovies.filter(m => m.title.toLowerCase().includes(val));
+            loadMovies(filtered);
+        };
+
+        const searchInput = document.getElementById('searchInput');
+        if(searchInput) searchInput.addEventListener('keyup', handleSearch);
+        
+        const searchInputMobile = document.getElementById('searchInputMobile');
+        if(searchInputMobile) searchInputMobile.addEventListener('keyup', handleSearch);
+
+    </script>
+</body>
+</html>
